@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Ofertas do Edu</title>
+<meta name="description" content="Vitrine de ofertas e links de afiliado.">
+<meta property="og:title" content="Ofertas do Edu">
+<meta property="og:description" content="Achados com desconto real, todo dia.">
+<meta property="og:type" content="website">
+<meta property="og:image" content="https://edulira1961.github.io/loja/capa.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="image_src" href="capa.png">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="topo">
+  <div class="marca">
+    <div class="avatar">E</div>
+    <div>
+      <h1>Ofertas do Edu</h1>
+      <p>Achados com desconto real</p>
+    </div>
+  </div>
+  <a class="btn-telegram" href="https://t.me/ofertasdocaca_oficial" target="_blank" rel="noopener">
+    Entrar no grupo
+  </a>
+</header>
+
+<div class="busca">
+  <input type="search" id="busca" placeholder="Buscar produto ou loja…"
+         autocomplete="off" aria-label="Buscar produto">
+</div>
+
+<nav class="filtros" id="filtros">
+  <button class="chip ativo" data-filtro="todos">Todos</button>
+  <button class="chip" data-filtro="mercadolivre">Mercado Livre</button>
+  <button class="chip" data-filtro="amazon">Amazon</button>
+  <button class="chip" data-filtro="shopee">Shopee</button>
+</nav>
+
+<main id="grade" class="grade" aria-live="polite">
+  <p class="carregando">Carregando ofertas…</p>
+</main>
+
+<p class="vazio" id="vazio" hidden>Nenhuma oferta nesse filtro.</p>
+
+<footer class="rodape">
+  <p>Preços e disponibilidade podem mudar no site oficial.</p>
+  <p class="links">
+    <a href="https://t.me/ofertasdocaca_oficial" target="_blank" rel="noopener">Telegram</a>
+    <a href="https://wa.me/5583981629796" target="_blank" rel="noopener">WhatsApp</a>
+  </p>
+</footer>
+
+<script>
+const BADGE = { mercadolivre: "Mercado Livre", amazon: "Amazon", shopee: "Shopee" };
+let produtos = [];
+let filtro = "todos";
+let termo = "";
+
+const grade = document.getElementById("grade");
+const vazio  = document.getElementById("vazio");
+const campo  = document.getElementById("busca");
+
+const normaliza = (s) => String(s || "").toLowerCase().normalize("NFD")
+  .replace(/[\u0300-\u036f]/g, "");
+
+const esc = (s) => String(s || "").replace(/[&<>"']/g, (c) => (
+  { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]
+));
+
+function card(p) {
+  const badge = p.desconto > 0
+    ? `<span class="desconto">-${p.desconto}%</span>` : "";
+  const loja = p.loja ? `<span class="loja">${esc(p.loja)}</span>` : "";
+  return `
+  <article class="card">
+    <a class="card-link" href="${esc(p.link)}" target="_blank" rel="noopener nofollow">
+      <div class="foto">
+        <img src="${esc(p.imagem)}" alt="${esc(p.titulo)}" loading="lazy"
+             onerror="this.classList.add('sem-foto')">
+        ${badge}
+      </div>
+      <div class="info">
+        <span class="origem">${BADGE[p.origem] || esc(p.origem)}</span>
+        <h2>${esc(p.titulo)}</h2>
+        ${loja}
+        <div class="comprar">
+          ${p.preco ? `<strong>${esc(p.preco)}</strong>` : ""}
+          <span class="ver">Ver oferta</span>
+        </div>
+      </div>
+    </a>
+  </article>`;
+}
+
+function render() {
+  const termoLimpo = normaliza(termo.trim());
+  const lista = produtos.filter((p) => {
+    if (filtro !== "todos" && p.origem !== filtro) return false;
+    if (!termoLimpo) return true;
+    return normaliza(p.titulo + " " + (p.loja || "")).includes(termoLimpo);
+  });
+
+  grade.innerHTML = lista.length
+    ? lista.map(card).join("")
+    : '<p class="carregando">Nada encontrado. Tente outro termo.</p>';
+  vazio.hidden = true;
+}
+
+let timer;
+campo.addEventListener("input", () => {
+  clearTimeout(timer);
+  timer = setTimeout(() => {
+    termo = campo.value;
+    render();
+  }, 140);
+});
+
+document.getElementById("filtros").addEventListener("click", (ev) => {
+  const btn = ev.target.closest(".chip");
+  if (!btn) return;
+  document.querySelectorAll(".chip").forEach((c) => c.classList.remove("ativo"));
+  btn.classList.add("ativo");
+  filtro = btn.dataset.filtro;
+  render();
+  localStorage.setItem("filtro", filtro);
+});
+
+fetch("produtos.json", { cache: "no-cache" })
+  .then((r) => {
+    if (!r.ok) throw new Error(r.status);
+    return r.json();
+  })
+  .then((d) => {
+    produtos = Array.isArray(d) ? d : [];
+    const salvo = localStorage.getItem("filtro");
+    if (salvo) {
+      filtro = salvo;
+      document.querySelectorAll(".chip").forEach((c) =>
+        c.classList.toggle("ativo", c.dataset.filtro === salvo));
+    }
+    render();
+  })
+  .catch(() => {
+    grade.innerHTML =
+      '<p class="carregando">Não foi possível carregar as ofertas.</p>';
+  });
+</script>
+
+</body>
+</html>
