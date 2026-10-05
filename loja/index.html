@@ -35,12 +35,7 @@
          autocomplete="off" aria-label="Buscar produto">
 </div>
 
-<nav class="filtros" id="filtros">
-  <button class="chip ativo" data-filtro="todos">Todos</button>
-  <button class="chip" data-filtro="mercadolivre">Mercado Livre</button>
-  <button class="chip" data-filtro="amazon">Amazon</button>
-  <button class="chip" data-filtro="shopee">Shopee</button>
-</nav>
+<nav class="filtros" id="filtros"></nav>
 
 <main id="grade" class="grade" aria-live="polite">
   <p class="carregando">Carregando ofertas…</p>
@@ -138,12 +133,22 @@ fetch("produtos.json", { cache: "no-cache" })
   })
   .then((d) => {
     produtos = Array.isArray(d) ? d : [];
+    // monta os chips so com as origens que existem no catalogo
+    const origens = [...new Set(produtos.map((p) => p.origem))].filter(
+      (o) => BADGE[o]
+    );
     const salvo = localStorage.getItem("filtro");
-    if (salvo) {
-      filtro = salvo;
-      document.querySelectorAll(".chip").forEach((c) =>
-        c.classList.toggle("ativo", c.dataset.filtro === salvo));
-    }
+    if (salvo && salvo !== "todos" && !origens.includes(salvo)) filtro = "todos";
+    document.getElementById("filtros").innerHTML = ["todos", ...origens]
+      .map((o) => {
+        const total = o === "todos"
+          ? produtos.length
+          : produtos.filter((p) => p.origem === o).length;
+        const ativo = filtro === o ? " ativo" : "";
+        return `<button class="chip${ativo}" data-filtro="${o}">` +
+               `${o === "todos" ? "Todos" : BADGE[o]} <b>${total}</b></button>`;
+      })
+      .join("");
     render();
   })
   .catch(() => {

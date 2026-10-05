@@ -91,6 +91,13 @@ a { color: inherit; text-decoration: none; }
 .busca input::-webkit-search-cancel-button { filter: invert(.6); }
 
 /* ---------- filtros ---------- */
+.chip b {
+  font-weight: 700;
+  opacity: .55;
+  margin-left: 4px;
+  font-size: .85em;
+}
+.chip.ativo b { opacity: .75; }
 .filtros {
   display: flex;
   gap: 8px;
